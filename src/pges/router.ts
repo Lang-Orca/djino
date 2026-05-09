@@ -3,6 +3,7 @@
  */
 
 import type { component } from "../component";
+import { storageKeys, StorageService } from "../services/storage";
 
 
 export class Router {
@@ -19,6 +20,7 @@ export class Router {
     public navigate(page: component): void{
         this.container.innerHTML = '';
         this.container.appendChild(page.render());
+        StorageService.save(storageKeys.current_page, page.constructor.name);
     }
 
     
