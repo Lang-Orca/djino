@@ -8,7 +8,7 @@ export class home extends component {
 
 
 
-    constructor(private onplay : ( name : string) => void) {
+    constructor(private onplay : ( name : string) => void,private onLeadboard : () => void) {
         super("div", "game-menu-container");
     }
 
@@ -72,11 +72,12 @@ export class home extends component {
             </div>
         </footer>
         `);
-        
+        // ouvrir la page pour le jeux
         this.element.querySelector('#start-game')!.addEventListener('click', () => {
             this.onplay('Djino');
         });
 
+        // changer le nom du joueur
         this.element.querySelector('#change_player_name')!.addEventListener('click', () => {
             this.element.querySelector<HTMLElement>('#change_name-section')!.style.display = 'flex';
             this.element.querySelector<HTMLElement>('#player_name_container')!.style.display = 'none';
@@ -92,6 +93,13 @@ export class home extends component {
 
         this.element.querySelector('#cancel_player_name')!.addEventListener('click', () => {
             this.element.querySelector<HTMLElement>('#change_name-section')!.style.display = 'none';
+            this.element.querySelector<HTMLElement>('#player_name_container')!.style.display = 'flex';
+        });
+
+        // afficher  le classement
+
+        this.element.querySelector('#view-leaderboard')!.addEventListener('click', () => {
+            this.onLeadboard();
         });
 
        
