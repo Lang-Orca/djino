@@ -1,0 +1,1 @@
+/**ici on doit definir les actions du dinosaure et les assets qui seront retourné au fur et à mesure .  */
