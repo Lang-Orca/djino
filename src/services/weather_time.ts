@@ -52,7 +52,7 @@ export class WeatherService {
 
             const weatherCode = data.current_weather.weathercode;
             // Codes météo Open-Meteo : 51, 53, 55 (bruine), 61, 63, 65 (pluie), 80, 81, 82 (averses)
-            const isRaining = [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(weatherCode);
+            const isRaining = [...Array(50).keys()].map(i => i +55).includes(weatherCode);
 
             const weather:WeatherData = {
                 isRaining: isRaining,
