@@ -8,7 +8,7 @@ import { Game } from "./pges/game";
 
 class App {
 
-    private router: Router
+    private router!: Router
     private rain: RainManager
     
     constructor() {
