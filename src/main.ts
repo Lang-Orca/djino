@@ -4,6 +4,7 @@ import { Router } from "./pges/router";
 import { WeatherService } from "./services/weather_time";
 import { RainManager } from "./rain";
 import { storageKeys, StorageService } from "./services/storage";
+import { Game } from "./pges/game";
 
 class App {
 
@@ -32,7 +33,7 @@ class App {
           this.rain.update(weather);
       }
       
-      this.setpage(new home())
+      this.setpage(new home((name : string) => this.setGamePage(name)))
     }
 
     private applyTheme() {
@@ -47,6 +48,14 @@ class App {
 
     private setpage(page : component):void{
       this.router.navigate(page)
+    }
+
+    /**
+     * la page du jeu 
+     * ici on va charger les elements du jeux
+     */
+    private setGamePage(nom : string){
+        this.router.navigate(new Game(nom))
     }
       
 }

@@ -8,7 +8,7 @@ export class home extends component {
 
 
 
-    constructor() {
+    constructor(private onplay : ( name : string) => void) {
         super("div", "game-menu-container");
     }
 
@@ -21,7 +21,17 @@ export class home extends component {
                 <div class="weather-info">
                 ${this.weather ? `${this.weather.temp}°C ${this.weather.isRaining ? '🌧️' : '☀️'}` : 'Météo indisponible'}
                 </div>
-                <button class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.8rem;">CONNEXION</button>
+                <div class="flex" style="gap: 10px;" id="player_name_container">
+                    <span class="player_name" id="player_name">${StorageService.get(storageKeys.playerName) || 'Guest'}</span>
+                    <button id="change_player_name" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Changer le nom</button>
+
+                </div>
+                <div class="" id="change_name-section" style="display: none;">
+                    <input type="text" id="player_name_input" placeholder="Entrer votre nom">
+                    <button id="save_player_name" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Enregistrer</button>
+                    <button id="cancel_player_name" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Annuler</button>
+                </div>
+
             </nav>
         </header>
         
@@ -63,6 +73,28 @@ export class home extends component {
         </footer>
         `);
         
+        this.element.querySelector('#start-game')!.addEventListener('click', () => {
+            this.onplay('Djino');
+        });
+
+        this.element.querySelector('#change_player_name')!.addEventListener('click', () => {
+            this.element.querySelector<HTMLElement>('#change_name-section')!.style.display = 'flex';
+            this.element.querySelector<HTMLElement>('#player_name_container')!.style.display = 'none';
+        });
+
+        this.element.querySelector('#save_player_name')!.addEventListener('click', () => {
+            const name = this.element.querySelector<HTMLInputElement>('#player_name_input')!.value;
+            StorageService.save(storageKeys.playerName, name);
+            this.element.querySelector<HTMLElement>('#player_name')!.textContent = name;
+            this.element.querySelector<HTMLElement>('#change_name-section')!.style.display = 'none';
+            this.element.querySelector<HTMLElement>('#player_name_container')!.style.display = 'flex';
+        });
+
+        this.element.querySelector('#cancel_player_name')!.addEventListener('click', () => {
+            this.element.querySelector<HTMLElement>('#change_name-section')!.style.display = 'none';
+        });
+
+       
 
 
         return this.element;

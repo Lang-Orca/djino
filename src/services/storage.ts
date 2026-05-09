@@ -6,7 +6,8 @@
 
 export const storageKeys = Object.freeze({
     weather: 'weather',
-    theme : "theme"
+    theme : "theme",
+    playerName : 'player_name',
 })
 
 
