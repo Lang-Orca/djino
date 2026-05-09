@@ -4,10 +4,10 @@ import { Router } from "./pges/router";
 import { WeatherService } from "./services/weather_time";
 import { RainManager } from "./rain";
 import { storageKeys, StorageService } from "./services/storage";
-
+import { SoundService } from "./services/sound";
 class App {
 
-    private router: Router
+    private router!: Router
     private rain: RainManager
     
     constructor() {
@@ -16,6 +16,7 @@ class App {
     }
 
     private async init() {
+      SoundService.init();
       this.router = new Router('app')
       this.applyTheme()
       

@@ -1,12 +1,11 @@
 import { component } from "../component";
 import heroImg from "../assets/hero.png";
 import { storageKeys, StorageService } from "../services/storage";
+import { SoundService } from "../services/sound";
 
 export class home extends component {
 
-    private weather = StorageService.get(storageKeys.weather) 
-
-
+    private weather = StorageService.get(storageKeys.weather)
 
     constructor() {
         super("div", "game-menu-container");
@@ -21,6 +20,12 @@ export class home extends component {
                 <div class="weather-info">
                 ${this.weather ? `${this.weather.temp}°C ${this.weather.isRaining ? '🌧️' : '☀️'}` : 'Météo indisponible'}
                 </div>
+
+                <!-- Bouton musique -->
+                <button class="btn btn-outline" id="music-toggle" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
+                    ${SoundService.isEnabled() ? '🎵 SON ON' : '🔇 SON OFF'}
+                </button>
+
                 <button class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.8rem;">CONNEXION</button>
             </nav>
         </header>
@@ -62,8 +67,15 @@ export class home extends component {
             </div>
         </footer>
         `);
-        
 
+        // Logique du bouton musique
+        const musicBtn = this.element.querySelector('#music-toggle') as HTMLButtonElement;
+        if (musicBtn) {
+            musicBtn.addEventListener('click', () => {
+                SoundService.toggle();
+                musicBtn.textContent = SoundService.isEnabled() ? '🎵 SON ON' : '🔇 SON OFF';
+            });
+        }
 
         return this.element;
     }
