@@ -50,24 +50,21 @@ export class home extends component {
         <footer class="game-footer">
             <div class="footer-stats container">
                 <div class="stat-item">
-                    <span class="stat-label">EXPLORATEURS ACTIFS</span>
-                    <span class="stat-value">12,543</span>
-                </div>
-                <div class="stat-item">
                     <span class="stat-label">METEO LOCALE</span>
                     <span class="stat-value" id="current-weather">
                         ${this.weather ? `${this.weather.temp}°C ${this.weather.isRaining ? 'Pluie' : 'Dégagé'}` : 'Chargement...'}
                     </span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">RECORD MONDIAL</span>
+                    <span class="stat-label">plus haut score </span>
                     <span class="stat-value">998,420</span>
                 </div>
             </div>
         </footer>
         `);
-
         
+
+
         return this.element;
     }
 }
