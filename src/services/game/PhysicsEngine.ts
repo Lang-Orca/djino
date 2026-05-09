@@ -2,65 +2,62 @@
  * @file PhysicsEngine.ts
  * @description Moteur physique du dinosaure dans DJINO.
  *
- * Ce module est responsable de TOUT ce qui concerne la physique
- * du personnage jouable (le dino) :
- *   - Sa position (x, y) sur le canvas
- *   - Sa vélocité verticale (chute, saut)
- *   - L'application de la gravité à chaque frame
- *   - La détection du sol (empêcher le dino de tomber infiniment)
- *   - Le saut simple et le double saut
+ * Ce module gère la physique du personnage (gravité, saut)
+ * et synchronise les résultats directement avec l'instance
+ * Dinosaure du coéquipier (position Y + état d'animation).
  *
- * ⚠️ Ce module ne dessine RIEN. Il calcule uniquement les données
- * de position que le renderer utilisera pour afficher le dino.
+ * Intégration avec la classe Dinosaure :
+ *   - Met à jour dino.y à chaque frame
+ *   - Appelle dino.setAction() selon l'état physique :
+ *       → En l'air  : DinoAction.JUMP
+ *       → Au sol    : DinoAction.RUN
+ *       → Mort      : DinoAction.DEAD (via markAsDead())
  *
  * @author Joel
- * @version 1.0.0
+ * @version 2.0.0
  */
+
+// LIGNE CORRECTE
+import { Dinosaure, DinoAction } from "../dino_actions";
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTES PHYSIQUES
 // ─────────────────────────────────────────────────────────────
 
-/**
- * Force de gravité appliquée à chaque frame (pixels/frame²).
- * Plus cette valeur est grande, plus le dino tombe vite.
- */
+/** Gravité appliquée à chaque frame (pixels/frame²) */
 const GRAVITY = 0.6;
 
-/**
- * Force initiale du saut (valeur négative = vers le haut).
- * En canvas, Y augmente vers le bas, donc sauter = Y négatif.
- */
+/** Force du saut principal (négatif = vers le haut) */
 const JUMP_FORCE = -14;
 
-/**
- * Force du second saut (légèrement moins puissante que le premier).
- */
+/** Force du double saut (légèrement moins puissante) */
 const DOUBLE_JUMP_FORCE = -11;
 
 /**
- * Largeur du dinosaure en pixels (utilisée pour le hitbox).
+ * Largeur du hitbox du dino en pixels.
+ * Légèrement réduite par rapport au sprite pour un jeu plus juste.
  */
-export const DINO_WIDTH = 60;
+export const DINO_WIDTH = 50;
 
 /**
- * Hauteur du dinosaure en pixels (utilisée pour le hitbox).
+ * Hauteur du hitbox du dino en pixels.
+ * Légèrement réduite par rapport au sprite pour un jeu plus juste.
  */
-export const DINO_HEIGHT = 70;
+export const DINO_HEIGHT = 60;
 
 // ─────────────────────────────────────────────────────────────
-// TYPES
+// TYPE
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Représente la position et la taille du dinosaure.
- * Utilisé par CollisionDetector pour les calculs de collision.
+ * Rectangle de collision du dinosaure.
+ * Transmis à CollisionDetector à chaque frame.
  */
 export interface DinoHitbox {
-    x: number;       // Position horizontale du coin supérieur gauche
-    y: number;       // Position verticale du coin supérieur gauche
-    width: number;   // Largeur du dino
-    height: number;  // Hauteur du dino
+    x: number;
+    y: number;
+    width: number;
+    height: number;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -69,216 +66,183 @@ export interface DinoHitbox {
 
 /**
  * @class PhysicsEngine
- * @description Gère la physique du dinosaure (position, gravité, saut).
+ * @description Gère la physique du dino et synchronise avec la classe Dinosaure.
  *
  * @example
- * const physics = new PhysicsEngine(800, 400);
+ * const dino    = new Dinosaure();
+ * const physics = new PhysicsEngine(800, 400, dino);
  *
- * // Dans la boucle de jeu, à chaque frame :
+ * // Chaque frame :
  * physics.update();
  *
- * // Quand le joueur appuie sur Espace :
+ * // Saut (touche Espace) :
  * physics.jump();
- *
- * // Pour dessiner le dino :
- * const hitbox = physics.getHitbox();
- * ctx.fillRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
  */
 export class PhysicsEngine {
 
-    // ── Position du dinosaure ────────────────────────────────
-
-    /** Position horizontale du dino (fixe, le dino ne bouge pas en X) */
-    private x: number;
-
-    /** Position verticale actuelle du dino */
-    private y: number;
-
-    /** Niveau du sol en Y (calculé depuis la hauteur du canvas) */
-    private groundY: number;
+    // ── Référence vers le Dinosaure du coéquipier ────────────
+    private dino: Dinosaure;
 
     // ── Physique ─────────────────────────────────────────────
+    private y:           number  = 0;
+    private groundY:     number;
+    private velocityY:   number  = 0;
+    private isOnGround:  boolean = true;
+    private jumpCount:   number  = 0;
+    private isDead:      boolean = false;
 
-    /** Vitesse verticale actuelle (positive = descend, négatif = monte) */
-    private velocityY: number = 0;
-
-    /** Indique si le dino est actuellement au sol */
-    private isOnGround: boolean = true;
-
-    /** Nombre de sauts effectués depuis le dernier contact avec le sol */
-    private jumpCount: number = 0;
-
-    /** Nombre maximum de sauts autorisés (2 = double saut activé) */
-    private readonly MAX_JUMPS: number = 2;
+    /** Nombre maximum de sauts autorisés (2 = double saut) */
+    private readonly MAX_JUMPS = 2;
 
     // ── Constructeur ─────────────────────────────────────────
 
     /**
-     * Crée le moteur physique et positionne le dino sur le sol.
-     *
-     * @param canvasWidth  - Largeur du canvas de jeu (pour positionner le dino en X)
-     * @param canvasHeight - Hauteur du canvas de jeu (pour calculer le niveau du sol)
+     * @param canvasWidth  - Largeur du canvas
+     * @param canvasHeight - Hauteur du canvas
+     * @param dino         - Instance Dinosaure à synchroniser
      */
-    constructor(canvasWidth: number, canvasHeight: number) {
-        // Le dino est positionné à 10% depuis la gauche (comme le jeu Google)
-        this.x = canvasWidth * 0.1;
+    constructor(canvasWidth: number, canvasHeight: number, dino: Dinosaure) {
+        this.dino    = dino;
 
         // Le sol est à 15% depuis le bas du canvas
         this.groundY = canvasHeight - canvasHeight * 0.15 - DINO_HEIGHT;
+        this.y       = this.groundY;
 
-        // Le dino démarre au niveau du sol
-        this.y = this.groundY;
+       // APRÈS — on utilise canvasWidth pour calculer la position X
+        this.dino.y = this.y;
+this.dino.x = canvasWidth * 0.1; // 10% depuis la gauche, cohérent avec le canvas }
     }
-
-    // ── Méthode principale (appelée chaque frame) ─────────────
+    // ── Méthode principale ───────────────────────────────────
 
     /**
-     * Met à jour la physique du dino pour la frame courante.
-     * Doit être appelé UNE FOIS par frame dans la boucle de jeu (GameEngine).
-     *
-     * Ordre des opérations :
-     * 1. Appliquer la gravité (augmenter velocityY)
-     * 2. Déplacer le dino (y += velocityY)
-     * 3. Vérifier si le dino touche le sol
+     * Met à jour la physique et synchronise avec le Dinosaure.
+     * Appelé UNE FOIS par frame dans GameEngine.
      */
     public update(): void {
-        // 1. Appliquer la gravité — accélère la chute à chaque frame
+        if (this.isDead) return; // Ne plus bouger si mort
+
+        // 1. Appliquer la gravité
         this.velocityY += GRAVITY;
 
-        // 2. Déplacer le dino verticalement selon sa vélocité
+        // 2. Déplacer verticalement
         this.y += this.velocityY;
 
-        // 3. Vérifier le contact avec le sol
+        // 3. Vérifier contact avec le sol
         this.checkGroundCollision();
+
+        // 4. Synchroniser la position Y sur le Dinosaure du coéquipier
+        this.dino.y = this.y;
+
+        // 5. Mettre à jour l'animation du Dinosaure selon l'état physique
+        this.syncDinoAction();
     }
 
     // ── Contrôles joueur ─────────────────────────────────────
 
     /**
-     * Fait sauter le dinosaure.
-     * Gère automatiquement le saut simple et le double saut.
-     *
-     * Règles :
-     * - 1er appel (au sol)    → saut normal
-     * - 2ème appel (en l'air) → double saut
-     * - 3ème appel et plus    → ignoré
-     *
-     * @returns `true` si le saut a été effectué, `false` si ignoré
+     * Fait sauter le dinosaure (simple ou double saut).
+     * @returns true si le saut est effectué, false si ignoré
      */
     public jump(): boolean {
-        // Vérifier si on peut encore sauter
-        if (this.jumpCount >= this.MAX_JUMPS) {
-            return false; // Trop de sauts, on ignore
-        }
+        if (this.isDead || this.jumpCount >= this.MAX_JUMPS) return false;
 
-        // Appliquer la force de saut (différente selon si c'est le 1er ou 2ème)
-        if (this.jumpCount === 0) {
-            this.velocityY = JUMP_FORCE;         // Saut principal
-        } else {
-            this.velocityY = DOUBLE_JUMP_FORCE;  // Double saut (légèrement plus faible)
-        }
-
+        this.velocityY = this.jumpCount === 0 ? JUMP_FORCE : DOUBLE_JUMP_FORCE;
         this.jumpCount++;
         this.isOnGround = false;
+
+        // Déclencher immédiatement l'animation de saut
+        this.dino.setAction(DinoAction.JUMP);
 
         return true;
     }
 
     /**
-     * Accélère la descente quand le joueur appuie vers le bas (crouch jump).
-     * Utile pour retomber plus vite après un saut.
+     * Accélère la descente (touche bas pendant le saut).
      */
     public fastFall(): void {
-        if (!this.isOnGround) {
-            // Augmente la vitesse de descente si le dino est en l'air
+        if (!this.isOnGround && !this.isDead) {
             this.velocityY += GRAVITY * 2;
         }
     }
 
-    // ── Getters (lecture des données) ────────────────────────
+    /**
+     * Marque le dino comme mort (appelé par CollisionDetector).
+     * Déclenche l'animation DEAD et gèle la physique.
+     */
+    public markAsDead(): void {
+        this.isDead    = true;
+        this.velocityY = 0;
+        this.dino.setAction(DinoAction.DEAD);
+    }
+
+    // ── Getters ──────────────────────────────────────────────
 
     /**
-     * Retourne le rectangle de collision (hitbox) du dinosaure.
-     * Utilisé par CollisionDetector à chaque frame.
+     * Retourne le hitbox du dino pour CollisionDetector.
+     * Utilise la position du Dinosaure directement.
      */
     public getHitbox(): DinoHitbox {
         return {
-            x: this.x,
-            y: this.y,
-            width: DINO_WIDTH,
+            x:      this.dino.x,
+            y:      this.dino.y,
+            width:  DINO_WIDTH,
             height: DINO_HEIGHT,
         };
     }
 
-    /**
-     * Retourne la position Y actuelle du dino.
-     */
-    public getY(): number {
-        return this.y;
-    }
-
-    /**
-     * Retourne la position X fixe du dino.
-     */
-    public getX(): number {
-        return this.x;
-    }
-
-    /**
-     * Retourne true si le dino est actuellement au sol.
-     */
-    public getIsOnGround(): boolean {
-        return this.isOnGround;
-    }
-
-    /**
-     * Retourne le niveau Y du sol (utile pour le renderer).
-     */
-    public getGroundY(): number {
-        return this.groundY;
-    }
+    public getGroundY():    number  { return this.groundY;    }
+    public getIsOnGround(): boolean { return this.isOnGround; }
 
     // ── Réinitialisation ─────────────────────────────────────
 
     /**
-     * Remet le dino dans son état initial (au sol, immobile).
-     * Appelé par GameEngine lors d'un restart.
+     * Remet la physique à zéro pour un nouveau jeu.
      */
     public reset(): void {
-        this.y = this.groundY;
-        this.velocityY = 0;
+        this.y          = this.groundY;
+        this.velocityY  = 0;
         this.isOnGround = true;
-        this.jumpCount = 0;
+        this.jumpCount  = 0;
+        this.isDead     = false;
+
+        this.dino.y = this.y;
+        this.dino.setAction(DinoAction.IDLE);
     }
 
     /**
-     * Recalcule la position du sol si le canvas est redimensionné.
-     * @param canvasHeight - Nouvelle hauteur du canvas
+     * Recalcule le sol si le canvas change de taille.
      */
     public resize(canvasHeight: number): void {
         this.groundY = canvasHeight - canvasHeight * 0.15 - DINO_HEIGHT;
-
-        // Si le dino était au sol, l'y replacer au nouveau sol
         if (this.isOnGround) {
-            this.y = this.groundY;
+            this.y      = this.groundY;
+            this.dino.y = this.y;
         }
     }
 
     // ── Méthodes privées ─────────────────────────────────────
 
-    /**
-     * Vérifie si le dino a atteint ou dépassé le niveau du sol.
-     * Si oui, stoppe sa chute et réinitialise le compteur de sauts.
-     */
+    /** Vérifie et corrige la position du sol. */
     private checkGroundCollision(): void {
         if (this.y >= this.groundY) {
-            // Le dino touche (ou dépasse) le sol → on le repositionne exactement
-            this.y = this.groundY;
-            this.velocityY = 0;
+            this.y          = this.groundY;
+            this.velocityY  = 0;
             this.isOnGround = true;
-            this.jumpCount = 0; // Réinitialiser le compteur de sauts
+            this.jumpCount  = 0;
         } else {
             this.isOnGround = false;
+        }
+    }
+
+    /**
+     * Synchronise l'animation du Dinosaure avec l'état physique.
+     * Appelé après chaque update().
+     */
+    private syncDinoAction(): void {
+        if (!this.isOnGround) {
+            this.dino.setAction(DinoAction.JUMP);
+        } else {
+            this.dino.setAction(DinoAction.RUN);
         }
     }
 }
