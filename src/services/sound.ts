@@ -20,7 +20,7 @@ export class SoundService {
 
     private static loadBackgroundMusic(): void {
         // Le fichier de musique de fond est un .aac à la racine des assets
-        this.bgMusic = this.createAudioElement('src/assets/bg-music', {
+        this.bgMusic = this.createAudioElement('src/assets/bg-sound', {
             loop: true,
             volume: this.masterVolume * 0.5,
             formats: ['aac', 'mp3']
