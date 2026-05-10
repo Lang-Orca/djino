@@ -26,6 +26,8 @@ export class Game extends component{
     }
 
     private updateGround(): void {
+        if (!this.engine.gsm.isPlaying()) return;
+
         const speed = this.engine.obstacles.getCurrentSpeed();
         const groundTileWidth = 200; // Largeur d'une tuile de sol
         
