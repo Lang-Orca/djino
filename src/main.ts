@@ -1,4 +1,3 @@
-import type { component } from "./component";
 import { home } from "./pges/home";
 import { Router } from "./pges/router";
 import { WeatherService } from "./services/weather_time";
@@ -13,7 +12,7 @@ import { leadboard } from "./pges/leadboard";
 
 class App {
 
-    private router: Router
+    private router!: Router
     private rain: RainManager
     private currentPage: string = StorageService.get(storageKeys.current_page) || "";
     
