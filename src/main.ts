@@ -14,7 +14,7 @@ import { leadboard } from "./pges/leadboard";
 
 class App {
 
-    private router: Router
+    private router!: Router
     private rain: RainManager
     private currentPage: string = StorageService.get(storageKeys.current_page) || "";
     
