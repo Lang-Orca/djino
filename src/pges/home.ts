@@ -5,9 +5,7 @@ import { SoundService } from "../services/sound";
 
 export class home extends component {
 
-    private weather = StorageService.get(storageKeys.weather) 
-
-
+    private weather = StorageService.get(storageKeys.weather)
 
     constructor(private onplay : ( name : string) => void,private onLeadboard : () => void) {
         super("div", "game-menu-container");

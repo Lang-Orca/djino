@@ -24,6 +24,7 @@ class App {
     }
 
     private async init() {
+      SoundService.init();
       this.router = new Router('app')
       this.applyTheme()
       SoundService.init();
