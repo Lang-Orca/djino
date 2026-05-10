@@ -15,7 +15,7 @@ export class LeaderboardService {
      */
     public static getLeaderboard(): LeaderboardEntry[] {
         const data = StorageService.get(storageKeys.leadBoard);
-        return data ? JSON.parse(data) : [];
+        return Array.isArray(data) ? data : [];
     }
 
     /**

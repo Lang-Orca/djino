@@ -3,6 +3,8 @@ import { storageKeys, StorageService } from "../services/storage";
 import { SoundService } from "../services/sound";
 import { DinoEngine } from "../services/game/DinoEngine";
 import { DinoAnimator } from "../services/game/DinoAnimator";
+import { GameState } from "../services/game/GameStateManager";
+import { LeaderboardService } from "../services/leaderboard";
 
 
 export class Game extends component{
@@ -51,10 +53,29 @@ export class Game extends component{
                 <div class="flex game-container" style="display: flex; justify-content: center; align-items: center; ">
                   <canvas id="game-canvas"></canvas>
                 </div>
+
+                <!-- Game Over Modal -->
+                <div id="game-over-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <h2 class="modal-title">Partie Terminée</h2>
+                        <div class="modal-score-container">
+                            <span class="modal-score-label">Votre Score</span>
+                            <span id="final-score" class="modal-score-value">0</span>
+                        </div>
+                        <div class="modal-actions">
+                            <button id="restart-btn" class="btn btn-primary modal-btn">RECOMMENCER</button>
+                            <button id="modal-home-btn" class="btn btn-outline modal-btn">MENU PRINCIPAL</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         `)
 
         const scoreEl = this.element.querySelector('#game-score');
+        const modal = this.element.querySelector('#game-over-modal') as HTMLElement;
+        const finalScoreEl = this.element.querySelector('#final-score');
+        const restartBtn = this.element.querySelector('#restart-btn');
+        const modalHomeBtn = this.element.querySelector('#modal-home-btn');
 
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === ' ' || event.key === 'ArrowUp' || event.key === 'Spacebar') {
@@ -64,11 +85,40 @@ export class Game extends component{
 
         document.addEventListener('keydown', onKeyDown);
 
-        this.element.querySelector('#return_to_home')!.addEventListener('click', () => {
+        const cleanup = () => {
             SoundService.stopBackground();
             document.removeEventListener('keydown', onKeyDown);
+            unsubscribe();
+        };
+
+        this.element.querySelector('#return_to_home')!.addEventListener('click', () => {
+            cleanup();
             this.onHome();
-        })
+        });
+
+        modalHomeBtn?.addEventListener('click', () => {
+            cleanup();
+            this.onHome();
+        });
+
+        restartBtn?.addEventListener('click', () => {
+            modal.classList.remove('active');
+            this.engine.restart();
+        });
+
+        // Écouter les changements d'état du jeu
+        const unsubscribe = this.engine.gsm.onStateChange((newState) => {
+            if (newState === GameState.GAME_OVER) {
+                const score = this.engine.score;
+                
+                // Sauvegarder le score dans le leaderboard
+                LeaderboardService.addScore(this.name, score);
+                
+                // Afficher le modal
+                if (finalScoreEl) finalScoreEl.textContent = score.toString();
+                modal.classList.add('active');
+            }
+        });
 
         const canvas = this.element.querySelector('#game-canvas') as HTMLCanvasElement;
         
@@ -106,9 +156,14 @@ export class Game extends component{
                 this.element.querySelector('#return_to_home')!.addEventListener('click', () => {
                     cancelAnimationFrame(animationId);
                 });
+
+                modalHomeBtn?.addEventListener('click', () => {
+                    cancelAnimationFrame(animationId);
+                });
             }
         }
 
         return this.element
     }
 }
+
