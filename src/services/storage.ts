@@ -10,6 +10,8 @@ export const storageKeys = Object.freeze({
     playerName : 'player_name',
     current_page : 'current_page',
     leadBoard : 'leadBoard',
+    sound_muted: 'sound_muted',
+    sound_volume: 'sound_volume',
 })
 
 

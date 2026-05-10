@@ -4,6 +4,7 @@ import { Router } from "./pges/router";
 import { WeatherService } from "./services/weather_time";
 import { RainManager } from "./rain";
 import { storageKeys, StorageService } from "./services/storage";
+import { SoundService } from "./services/sound";
 import { Game } from "./pges/game";
 import { leadboard } from "./pges/leadboard";
 
@@ -25,6 +26,8 @@ class App {
     private async init() {
       this.router = new Router('app')
       this.applyTheme()
+      SoundService.init();
+      SoundService.playBackground();
       
       // Assurer que le container app est en dessous de la pluie
       const appEl = document.getElementById('app');

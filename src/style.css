@@ -549,6 +549,45 @@ video, audio {
     animation: shine 3s infinite;
 }
 
+.sound-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.volume-slider {
+    width: 120px;
+    cursor: pointer;
+    appearance: none;
+    background: var(--border-color);
+    height: 6px;
+    border-radius: 999px;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.35);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+}
+
+#sound-toggle {
+    min-width: 44px;
+    padding: 0.4rem 0.8rem;
+}
+
 .game-footer {
     padding: var(--spacing-md);
     background: rgba(0, 0, 0, 0.3);

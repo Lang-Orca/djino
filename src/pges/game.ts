@@ -1,6 +1,7 @@
 import { component } from "../component";
 import { storageKeys, StorageService } from "../services/storage";
 import { GameMecanic } from "../services/mecanic";
+import { SoundService } from "../services/sound";
 
 
 export class Game extends component{
@@ -69,8 +70,18 @@ export class Game extends component{
 
         const scoreEl = this.element.querySelector('#game-score');
 
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === ' ' || event.key === 'ArrowUp' || event.key === 'Spacebar') {
+                SoundService.playEffect('jump');
+            }
+        };
+
+        document.addEventListener('keydown', onKeyDown);
+
         this.element.querySelector('#return_to_home')!.addEventListener('click', () => {
-            this.onHome()
+            SoundService.stopBackground();
+            document.removeEventListener('keydown', onKeyDown);
+            this.onHome();
         })
 
         const canvas = this.element.querySelector('#game-canvas') as HTMLCanvasElement;
