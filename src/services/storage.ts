@@ -5,7 +5,12 @@
 export const storageKeys = Object.freeze({
     weather: 'weather',
     theme: "theme",
-    music: "music"       // ← ajout : préférence musique de fond
+    music: "music" ,      // ← ajout : préférence musique de fond
+    playerName : 'player_name',
+    current_page : 'current_page',
+    leadBoard : 'leadBoard',
+    sound_muted: 'sound_muted',
+    sound_volume: 'sound_volume',
 })
 
 export class StorageService {

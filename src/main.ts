@@ -5,10 +5,18 @@ import { WeatherService } from "./services/weather_time";
 import { RainManager } from "./rain";
 import { storageKeys, StorageService } from "./services/storage";
 import { SoundService } from "./services/sound";
+import { Game } from "./pges/game";
+import { leadboard } from "./pges/leadboard";
+
+
+
+
+
 class App {
 
     private router!: Router
     private rain: RainManager
+    private currentPage: string = StorageService.get(storageKeys.current_page) || "";
     
     constructor() {
       this.rain = new RainManager();
@@ -19,6 +27,8 @@ class App {
       SoundService.init();
       this.router = new Router('app')
       this.applyTheme()
+      SoundService.init();
+      SoundService.playBackground();
       
       // Assurer que le container app est en dessous de la pluie
       const appEl = document.getElementById('app');
@@ -32,8 +42,24 @@ class App {
       if(weather) {
           this.rain.update(weather);
       }
+  
+      this.restore_page()
+
+    }
+
+    private restore_page(){
+      console.log("restauration des donnes ");
       
-      this.setpage(new home())
+      if(this.currentPage === "Game"){
+        const savedName = StorageService.get(storageKeys.playerName)
+        if(savedName){
+          this.setGamePage(savedName)
+        }else{
+          this.setpageHome()
+        }
+      }else{
+        this.setpageHome()
+      }
     }
 
     private applyTheme() {
@@ -46,8 +72,23 @@ class App {
       console.log(`Theme appliqué : ${theme} (Heure: ${hour}h)`);
     }
 
-    private setpage(page : component):void{
-      this.router.navigate(page)
+    private setpageHome():void{
+      console.log("affichage de la page d'accueil");
+      
+      const homepage = new home((name : string) => this.setGamePage(name), () => this.setLeadboardPage())
+      this.router.navigate(homepage)
+    }
+
+    /**
+     * la page du jeu 
+     * ici on va charger les elements du jeux
+     */
+    private setGamePage(nom : string){
+        this.router.navigate(new Game(nom, () => this.setpageHome()))
+    }
+
+    private setLeadboardPage(){
+        this.router.navigate(new leadboard(() => this.setpageHome()))
     }
       
 }

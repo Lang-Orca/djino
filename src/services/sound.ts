@@ -1,105 +1,113 @@
 /**
- * c'ets ici que le service de sons seras definis et ses etats
- */
-
-/**
- * sound.ts
- * Gère la musique de fond et la musique de game over.
- * - La musique de fond démarre automatiquement au lancement
- * - L'utilisateur peut la mettre en pause / la relancer
- * - La préférence est sauvegardée dans le localStorage
+ * Service gérant les sons et la musique de fond.
+ * Supports MP3 + OGG pour la compatibilité navigateur.
  */
 
 import { storageKeys, StorageService } from "./storage";
-import bgMusic from "../assets/bg-music.aac";
-import gameoverMusic from "../assets/gameover.aac";
+
+export type SoundEffect = 'jump' | 'collision' | 'score' | 'gameOver';
 
 export class SoundService {
+    private static bgMusic: HTMLAudioElement | null = null;
+    private static effectsAudio: Map<SoundEffect, HTMLAudioElement> = new Map();
+    private static isMuted: boolean = StorageService.get(storageKeys.sound_muted) || false;
+    private static masterVolume: number = StorageService.get(storageKeys.sound_volume) || 0.7;
 
-    private static bgAudio: HTMLAudioElement = new Audio(bgMusic);
-    private static gameoverAudio: HTMLAudioElement = new Audio(gameoverMusic);
-    private static isMusicEnabled: boolean = true;
-
-    /**
-     * Initialise le service son.
-     * Récupère la préférence sauvegardée et démarre la musique si activée.
-     */
     public static init(): void {
-        // Récupérer la préférence sauvegardée
-        const saved = StorageService.get(storageKeys.music);
-        this.isMusicEnabled = saved !== null ? saved : true;
-
-        // Configurer la musique de fond
-        this.bgAudio.loop = true;
-        this.bgAudio.volume = 0.5;
-
-        // Configurer la musique de game over
-        this.gameoverAudio.loop = false;
-        this.gameoverAudio.volume = 0.7;
-
-        // Démarrer la musique si activée
-        if (this.isMusicEnabled) {
-            this.playBgMusic();
-        }
+        this.loadBackgroundMusic();
+        this.preloadEffects();
     }
 
-    /**
-     * Lance la musique de fond.
-     */
-    public static playBgMusic(): void {
-        this.bgAudio.play().catch(() => {
-            // Le navigateur bloque l'autoplay — on attend un clic utilisateur
-            document.addEventListener('click', () => {
-                if (this.isMusicEnabled) {
-                    this.bgAudio.play().catch(() => {});
-                }
-            }, { once: true });
+    private static loadBackgroundMusic(): void {
+        this.bgMusic = this.createAudioElement('src/assets/sounds/music/background', {
+            loop: true,
+            volume: this.masterVolume * 0.5,
         });
     }
 
-    /**
-     * Met en pause la musique de fond.
-     */
-    public static pauseBgMusic(): void {
-        this.bgAudio.pause();
+    private static preloadEffects(): void {
+        const effects: SoundEffect[] = ['jump', 'collision', 'score', 'gameOver'];
+        effects.forEach(effect => {
+            const audio = this.createAudioElement(`src/assets/sounds/effects/${effect}`, {
+                volume: this.masterVolume,
+            });
+            this.effectsAudio.set(effect, audio);
+        });
     }
 
-    /**
-     * Active ou désactive la musique de fond.
-     * Sauvegarde la préférence dans le localStorage.
-     */
-    public static toggle(): void {
-        this.isMusicEnabled = !this.isMusicEnabled;
-        StorageService.save(storageKeys.music, this.isMusicEnabled);
+    private static createAudioElement(basePath: string, config: { volume?: number; loop?: boolean } = {}): HTMLAudioElement {
+        const audio = new Audio();
 
-        if (this.isMusicEnabled) {
-            this.playBgMusic();
-        } else {
-            this.pauseBgMusic();
+        const sourceMp3 = document.createElement('source');
+        sourceMp3.src = `${basePath}.mp3`;
+        sourceMp3.type = 'audio/mpeg';
+        audio.appendChild(sourceMp3);
+
+        const sourceOgg = document.createElement('source');
+        sourceOgg.src = `${basePath}.ogg`;
+        sourceOgg.type = 'audio/ogg';
+        audio.appendChild(sourceOgg);
+
+        audio.volume = config.volume ?? this.masterVolume;
+        audio.loop = config.loop ?? false;
+        audio.muted = this.isMuted;
+        audio.preload = 'auto';
+
+        return audio;
+    }
+
+    public static playEffect(effect: SoundEffect): void {
+        if (this.isMuted) return;
+        const audio = this.effectsAudio.get(effect);
+        if (!audio) return;
+        audio.currentTime = 0;
+        audio.play().catch(() => {
+            // Le son peut être bloqué automatiquement avant une interaction utilisateur
+        });
+    }
+
+    public static playBackground(): void {
+        if (this.isMuted || !this.bgMusic) return;
+        this.bgMusic.play().catch(() => {
+            // Ignore les erreurs de lecture automatique avant interaction
+        });
+    }
+
+    public static pauseBackground(): void {
+        if (this.bgMusic) {
+            this.bgMusic.pause();
         }
     }
 
-    /**
-     * Retourne l'état actuel de la musique.
-     */
-    public static isEnabled(): boolean {
-        return this.isMusicEnabled;
+    public static stopBackground(): void {
+        if (this.bgMusic) {
+            this.bgMusic.pause();
+            this.bgMusic.currentTime = 0;
+        }
     }
 
-    /**
-     * Joue la musique de game over.
-     * La musique de fond continue de jouer.
-     */
-    public static playGameOver(): void {
-        this.gameoverAudio.currentTime = 0;
-        this.gameoverAudio.play().catch(() => {});
+    public static setMuted(muted: boolean): void {
+        this.isMuted = muted;
+        StorageService.save(storageKeys.sound_muted, muted);
+        if (this.bgMusic) this.bgMusic.muted = muted;
+        this.effectsAudio.forEach(audio => (audio.muted = muted));
+        if (!muted) this.playBackground();
     }
 
-    /**
-     * Arrête la musique de game over.
-     */
-    public static stopGameOver(): void {
-        this.gameoverAudio.pause();
-        this.gameoverAudio.currentTime = 0;
+    public static setVolume(volume: number): void {
+        this.masterVolume = Math.max(0, Math.min(1, volume));
+        StorageService.save(storageKeys.sound_volume, this.masterVolume);
+        if (this.bgMusic) this.bgMusic.volume = this.masterVolume * 0.5;
+        this.effectsAudio.forEach(audio => {
+            audio.volume = this.masterVolume;
+        });
+    }
+
+    public static isSoundMuted(): boolean {
+        return this.isMuted;
+    }
+
+    public static getVolume(): number {
+        return this.masterVolume;
     }
 }
