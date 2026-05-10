@@ -1,15 +1,15 @@
 import { component } from "../component";
 import heroImg from "../assets/hero.png";
 import { storageKeys, StorageService } from "../services/storage";
+import { SoundService } from "../services/sound";
 
 export class home extends component {
 
-    private weather = StorageService.get(storageKeys.weather) 
-
-
+    private weather = StorageService.get(storageKeys.weather)
 
     constructor(private onplay : ( name : string) => void,private onLeadboard : () => void) {
         super("div", "game-menu-container");
+        SoundService.playBackground();
     }
 
     render(): HTMLElement {
@@ -21,10 +21,13 @@ export class home extends component {
                 <div class="weather-info">
                 ${this.weather ? `${this.weather.temp}°C ${this.weather.isRaining ? '🌧️' : '☀️'}` : 'Météo indisponible'}
                 </div>
-                <div class="flex" style="gap: 10px;" id="player_name_container">
+                <div class="flex" style="gap: 10px; align-items: center;" id="player_name_container">
                     <span class="player_name" id="player_name">${StorageService.get(storageKeys.playerName) || 'Guest'}</span>
                     <button id="change_player_name" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Changer le nom</button>
-
+                    <div class="sound-controls" style="display: flex; gap: 10px; align-items: center;">
+                        <button id="sound-toggle" class="btn btn-outline" style="padding: 0.5rem 0.8rem; font-size: 0.8rem;">${SoundService.isSoundMuted() ? '🔇' : '🔊'}</button>
+                        <input type="range" id="volume-control" min="0" max="100" value="${Math.round(SoundService.getVolume() * 100)}" class="volume-slider">
+                    </div>
                 </div>
                 <div class="" id="change_name-section" style="display: none;">
                     <input type="text" id="player_name_input" placeholder="Entrer votre nom">
@@ -102,8 +105,17 @@ export class home extends component {
             this.onLeadboard();
         });
 
-       
+        this.element.querySelector('#sound-toggle')!.addEventListener('click', () => {
+            const isMuted = SoundService.isSoundMuted();
+            SoundService.setMuted(!isMuted);
+            const btn = this.element.querySelector('#sound-toggle') as HTMLButtonElement;
+            btn.textContent = isMuted ? '🔊' : '🔇';
+        });
 
+        this.element.querySelector('#volume-control')!.addEventListener('input', (e) => {
+            const value = (e.target as HTMLInputElement).value;
+            SoundService.setVolume(parseInt(value, 10) / 100);
+        });
 
         return this.element;
     }
