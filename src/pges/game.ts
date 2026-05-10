@@ -8,7 +8,7 @@ import { LeaderboardService } from "../services/leaderboard";
 
 
 export class Game extends component{
-    private name : string = StorageService.get(storageKeys.playerName) || "Guest";
+    private name : string;
     private engine: DinoEngine;
     private animator: DinoAnimator | null = null;
 
