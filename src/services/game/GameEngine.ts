@@ -5,7 +5,7 @@
  */
 
 import type { DinoHitbox } from "./PhysicsEngine";
-import type { Obstacle } from "./ObstacleManager";
+import type { Obstacle } from "./Obstacle";
 
 export class CollisionDetector {
 

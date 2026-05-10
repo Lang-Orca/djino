@@ -11,6 +11,10 @@ export enum DinoAction {
 
 export class Dinosaure {
     private currentAction: DinoAction = DinoAction.IDLE;
+
+    public get action(): DinoAction {
+        return this.currentAction;
+    }
     public x : number = 100;
     public y : number = 0;
 

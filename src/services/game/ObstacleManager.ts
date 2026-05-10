@@ -38,28 +38,7 @@ const MAX_GAP = 600;
 // TYPES
 // ─────────────────────────────────────────────────────────────
 
-/**
- * Types d'obstacles disponibles dans le jeu.
- */
-export enum ObstacleType {
-    CACTUS_SMALL  = 'CACTUS_SMALL',   // Petit cactus (facile à éviter)
-    CACTUS_LARGE  = 'CACTUS_LARGE',   // Grand cactus (plus difficile)
-    CACTUS_GROUP  = 'CACTUS_GROUP',   // Groupe de cactus (très difficile)
-    BIRD          = 'BIRD',           // Oiseau volant (éviter en baissant)
-}
-
-/**
- * Représente un obstacle avec sa position et ses dimensions.
- * Utilisé par CollisionDetector pour les calculs de collision.
- */
-export interface Obstacle {
-    id: number;               // Identifiant unique de l'obstacle
-    type: ObstacleType;       // Type d'obstacle
-    x: number;                // Position horizontale (coin gauche)
-    y: number;                // Position verticale (coin haut)
-    width: number;            // Largeur en pixels
-    height: number;           // Hauteur en pixels
-}
+import { ObstacleType, type Obstacle } from "./Obstacle";
 
 // ─────────────────────────────────────────────────────────────
 // CLASSE PRINCIPALE

@@ -1,56 +1,40 @@
 import { component } from "../component";
 import { storageKeys, StorageService } from "../services/storage";
-import { GameMecanic } from "../services/mecanic";
 import { SoundService } from "../services/sound";
+import { DinoEngine } from "../services/game/DinoEngine";
+import { DinoAnimator } from "../services/game/DinoAnimator";
 
 
 export class Game extends component{
     private name : string = StorageService.get(storageKeys.playerName) || "Guest";
-    private mecanic: GameMecanic;
+    private engine: DinoEngine;
+    private animator: DinoAnimator | null = null;
 
     private groundX : number = 0;
-    private canvasWidth : number = 800
-    private groundImage : HTMLImageElement = new Image()
+    private canvasWidth : number = 800;
+    private canvasHeight : number = 800;
+    private groundImage : HTMLImageElement = new Image();
 
     constructor(name : string, private onHome : ()=> void){
         super("div", "game-page-wrapper");
         this.name = name;
-        this.mecanic = new GameMecanic(4);
-        this.groundImage.src = "src/assets/decor/ground.svg"
+        this.engine = new DinoEngine(this.canvasWidth, this.canvasHeight);
+        this.groundImage.src = "src/assets/decor/ground.svg";
+        
+        // Démarrer le jeu immédiatement
+        this.engine.gsm.startGame();
     }
 
-    private update(): void {
-        const speed = this.mecanic.updateScore(0.1);
-        const groundTileWidth = this.canvasWidth / 4; // 200px
+    private updateGround(): void {
+        const speed = this.engine.obstacles.getCurrentSpeed();
+        const groundTileWidth = 200; // Largeur d'une tuile de sol
         
-        // Défilement du sol
         this.groundX -= speed;
-        // On reset dès qu'on a parcouru une seule tuile
         if (this.groundX <= -groundTileWidth) {
             this.groundX = 0;
         }
     }
 
-    private renderGround(ctx: CanvasRenderingContext2D): void {
-        const groundHeight = 200;
-        const repeatCount = 4;
-        const groundWidth = this.canvasWidth / repeatCount; // 200px
-        
-        for (let y = 800 - groundHeight; y >= 0; y -= groundHeight) {
-            if (y - groundHeight < 400) continue;
-
-            // On dessine 5 fois (4 + 1 de sécurité) pour le défilement
-            for (let i = 0; i <= repeatCount; i++) {
-                ctx.drawImage(
-                    this.groundImage, 
-                    this.groundX + (i * groundWidth), 
-                    y, 
-                    groundWidth, 
-                    groundHeight
-                );
-            }
-        }
-    }
 
     public render(): HTMLElement {
         this.setContent(`
@@ -72,7 +56,7 @@ export class Game extends component{
 
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === ' ' || event.key === 'ArrowUp' || event.key === 'Spacebar') {
-                SoundService.playEffect('jump');
+                this.engine.jump();
             }
         };
 
@@ -88,35 +72,35 @@ export class Game extends component{
         
         if (canvas) {
             const ctx = canvas.getContext('2d');
-            canvas.width = 800;
-            canvas.height = 800;
+            canvas.width = this.canvasWidth;
+            canvas.height = this.canvasHeight;
 
             if (ctx) {
+                this.animator = new DinoAnimator(ctx);
                 let animationId: number;
+                let lastTime = 0;
 
-                const animate = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    
-                    // Fond gris léger pour le ciel
-                    ctx.fillStyle = 'rgba(168, 85, 247, 0.05)';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                const animate = (time: number) => {
+                    const deltaTime = time - lastTime;
+                    lastTime = time;
 
-                    this.update();
-                    this.renderGround(ctx);
+                    // Mise à jour logique
+                    this.engine.update();
+                    this.updateGround();
                     
-                    if (scoreEl) scoreEl.textContent = `Score : ${this.mecanic.score}`;
+                    // Rendu
+                    if (this.animator) {
+                        this.animator.render(this.engine, this.groundX, this.groundImage);
+                    }
+                    
+                    if (scoreEl) scoreEl.textContent = `Score : ${this.engine.score}`;
                     
                     animationId = requestAnimationFrame(animate);
                 };
 
-                // On s'assure que l'image est chargée
-                if (this.groundImage.complete) {
-                    animate();
-                } else {
-                    this.groundImage.onload = () => animate();
-                }
+                // Attendre un peu pour le chargement des assets ou démarrer direct
+                requestAnimationFrame(animate);
 
-                // Nettoyage de l'animation si on quitte la page (via le bouton retour par exemple)
                 this.element.querySelector('#return_to_home')!.addEventListener('click', () => {
                     cancelAnimationFrame(animationId);
                 });
