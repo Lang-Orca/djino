@@ -77,7 +77,8 @@ export class home extends component {
         `);
         // ouvrir la page pour le jeux
         this.element.querySelector('#start-game')!.addEventListener('click', () => {
-            this.onplay('Djino');
+            const currentName = StorageService.get(storageKeys.playerName) || 'Guest';
+            this.onplay(currentName);
         });
 
         // changer le nom du joueur

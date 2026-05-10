@@ -11,6 +11,10 @@ export enum DinoAction {
 
 export class Dinosaure {
     private currentAction: DinoAction = DinoAction.IDLE;
+
+    public get action(): DinoAction {
+        return this.currentAction;
+    }
     public x : number = 100;
     public y : number = 0;
 
@@ -33,7 +37,14 @@ export class Dinosaure {
     public update(deltaTime : number){
         this.frameTimer += deltaTime;
         if(this.frameTimer >= this.frameInterval){
-            this.frame = this.frame % this.frameCount[this.currentAction] + 1;
+            const maxFrames = this.frameCount[this.currentAction];
+            
+            // Si c'est l'animation de mort, on s'arrête à la dernière frame
+            if (this.currentAction === DinoAction.DEAD && this.frame >= maxFrames) {
+                return;
+            }
+
+            this.frame = (this.frame % maxFrames) + 1;
             this.frameTimer = 0;
         }
     }
