@@ -33,6 +33,7 @@
 import { GameStateManager } from "./GameStateManager";
 import { PhysicsEngine }    from "./PhysicsEngine";
 import { ObstacleManager }  from "./ObstacleManager";
+import { SoundService }     from "../sound";
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTES
@@ -200,10 +201,19 @@ export class CollisionDetector {
         // 1. Empêcher de détecter d'autres collisions après celle-ci
         this.collisionOccurred = true;
 
-        // 2. Déclencher l'animation de mort sur le dino
+        // 2. Jouer les sons de collision et de fin de partie
+        SoundService.playEffect('collision');
+        SoundService.stopBackground();
+        
+        // Un petit délai avant le son de Game Over pour ne pas superposer trop violemment
+        setTimeout(() => {
+            SoundService.playEffect('gameOver');
+        }, 300);
+
+        // 3. Déclencher l'animation de mort sur le dino
         this.physics.markAsDead();
 
-        // 3. Passer le jeu en état GAME_OVER
+        // 4. Passer le jeu en état GAME_OVER
         this.gsm.triggerGameOver();
     }
 }

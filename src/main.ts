@@ -1,9 +1,9 @@
-import type { component } from "./component";
 import { home } from "./pges/home";
 import { Router } from "./pges/router";
 import { WeatherService } from "./services/weather_time";
 import { RainManager } from "./rain";
 import { storageKeys, StorageService } from "./services/storage";
+import { SoundService } from "./services/sound";
 import { Game } from "./pges/game";
 import { leadboard } from "./pges/leadboard";
 
@@ -23,8 +23,12 @@ class App {
     }
 
     private async init() {
+      SoundService.init();
       this.router = new Router('app')
       this.applyTheme()
+      
+      // Force le démarrage de la musique au chargement
+      SoundService.playBackground();
       
       // Assurer que le container app est en dessous de la pluie
       const appEl = document.getElementById('app');
