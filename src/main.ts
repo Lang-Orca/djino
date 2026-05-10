@@ -28,14 +28,8 @@ class App {
       this.router = new Router('app')
       this.applyTheme()
       
-      // On débloque l'audio sur le premier clic de l'utilisateur
-      const resumeAudio = () => {
-          SoundService.resumeContext();
-          document.removeEventListener('click', resumeAudio);
-          document.removeEventListener('keydown', resumeAudio);
-      };
-      document.addEventListener('click', resumeAudio);
-      document.addEventListener('keydown', resumeAudio);
+      // Force le démarrage de la musique au chargement
+      SoundService.playBackground();
       
       // Assurer que le container app est en dessous de la pluie
       const appEl = document.getElementById('app');
