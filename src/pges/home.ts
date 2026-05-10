@@ -9,6 +9,7 @@ export class home extends component {
 
     constructor(private onplay : ( name : string) => void,private onLeadboard : () => void) {
         super("div", "game-menu-container");
+        SoundService.playBackground();
     }
 
     render(): HTMLElement {

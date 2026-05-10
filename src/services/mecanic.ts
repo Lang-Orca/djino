@@ -1,3 +1,5 @@
+import { SoundService } from "./sound";
+
 /**
  * Service gérant les mécaniques de jeu : score, vitesse et difficulté
  */
@@ -27,6 +29,7 @@ export class GameMecanic {
         if (currentMilestones > lastMilestones) {
             this._baseSpeed += this._speedIncrement;
             this._lastSpeedUpdateScore = this._score;
+            SoundService.playEffect('score');
             console.log(`Difficulté augmentée ! Nouvelle vitesse : ${this._baseSpeed}`);
         }
 

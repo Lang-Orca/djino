@@ -19,9 +19,11 @@ export class SoundService {
     }
 
     private static loadBackgroundMusic(): void {
-        this.bgMusic = this.createAudioElement('src/assets/sounds/music/background', {
+        // Le fichier de musique de fond est un .aac à la racine des assets
+        this.bgMusic = this.createAudioElement('src/assets/bg-music', {
             loop: true,
             volume: this.masterVolume * 0.5,
+            formats: ['aac', 'mp3']
         });
     }
 
@@ -30,39 +32,67 @@ export class SoundService {
         effects.forEach(effect => {
             const audio = this.createAudioElement(`src/assets/sounds/effects/${effect}`, {
                 volume: this.masterVolume,
+                formats: ['mp3', 'ogg']
             });
             this.effectsAudio.set(effect, audio);
         });
     }
 
-    private static createAudioElement(basePath: string, config: { volume?: number; loop?: boolean } = {}): HTMLAudioElement {
+    private static createAudioElement(basePath: string, config: { volume?: number; loop?: boolean, formats?: string[] } = {}): HTMLAudioElement {
         const audio = new Audio();
+        const formats = config.formats || ['mp3', 'ogg'];
 
-        const sourceMp3 = document.createElement('source');
-        sourceMp3.src = `${basePath}.mp3`;
-        sourceMp3.type = 'audio/mpeg';
-        audio.appendChild(sourceMp3);
-
-        const sourceOgg = document.createElement('source');
-        sourceOgg.src = `${basePath}.ogg`;
-        sourceOgg.type = 'audio/ogg';
-        audio.appendChild(sourceOgg);
+        formats.forEach(ext => {
+            const source = document.createElement('source');
+            source.src = `${basePath}.${ext}`;
+            
+            // Mapping des types MIME
+            let type = `audio/${ext}`;
+            if (ext === 'mp3') type = 'audio/mpeg';
+            if (ext === 'aac') type = 'audio/aac';
+            
+            source.type = type;
+            audio.appendChild(source);
+        });
 
         audio.volume = config.volume ?? this.masterVolume;
         audio.loop = config.loop ?? false;
         audio.muted = this.isMuted;
         audio.preload = 'auto';
+        
+        // Charger explicitement pour prendre en compte les sources
+        audio.load();
 
         return audio;
+    }
+
+    /**
+     * Tente de débloquer l'audio après une interaction utilisateur.
+     * Utile pour contourner les politiques d'autoplay des navigateurs.
+     */
+    public static async resumeContext(): Promise<void> {
+        if (this.isMuted) return;
+        
+        if (this.bgMusic && this.bgMusic.paused) {
+            try {
+                await this.bgMusic.play();
+            } catch (err) {
+                console.warn("Échec de reprise de la musique de fond:", err);
+            }
+        }
     }
 
     public static playEffect(effect: SoundEffect): void {
         if (this.isMuted) return;
         const audio = this.effectsAudio.get(effect);
         if (!audio) return;
-        audio.currentTime = 0;
-        audio.play().catch(() => {
-            // Le son peut être bloqué automatiquement avant une interaction utilisateur
+        
+        // Cloner le nœud pour permettre de jouer le même son plusieurs fois en simultané
+        const playInstance = audio.cloneNode(true) as HTMLAudioElement;
+        playInstance.volume = audio.volume;
+        playInstance.muted = audio.muted;
+        playInstance.play().catch(() => {
+            // Ignorer les erreurs d'autoplay
         });
     }
 
