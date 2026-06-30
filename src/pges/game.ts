@@ -131,7 +131,7 @@ export class Game extends component{
                 let animationId: number;
 
                 const animate = (time: number) => {
-                    let lastTime = time;
+
                     console.log(time)
 
                     // Mise à jour logique
