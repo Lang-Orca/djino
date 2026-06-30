@@ -1,5 +1,4 @@
 import { component } from "../component";
-import { storageKeys, StorageService } from "../services/storage";
 import { SoundService } from "../services/sound";
 import { DinoEngine } from "../services/game/DinoEngine";
 import { DinoAnimator } from "../services/game/DinoAnimator";
@@ -133,7 +132,6 @@ export class Game extends component{
                 let lastTime = 0;
 
                 const animate = (time: number) => {
-                    const deltaTime = time - lastTime;
                     lastTime = time;
 
                     // Mise à jour logique
@@ -166,4 +164,3 @@ export class Game extends component{
         return this.element
     }
 }
-
