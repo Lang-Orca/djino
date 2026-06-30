@@ -132,6 +132,7 @@ export class Game extends component{
 
                 const animate = (time: number) => {
                     let lastTime = time;
+                    console.log(time)
 
                     // Mise à jour logique
                     this.engine.update();
