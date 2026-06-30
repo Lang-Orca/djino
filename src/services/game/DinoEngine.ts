@@ -1,5 +1,5 @@
 import { Dinosaure } from "../dino_actions";
-import { GameStateManager, GameState } from "./GameStateManager";
+import { GameStateManager } from "./GameStateManager";
 import { PhysicsEngine } from "./PhysicsEngine";
 import { ObstacleManager } from "./ObstacleManager";
 import { CollisionDetector } from "./CollisionDetector";
