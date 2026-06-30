@@ -129,7 +129,6 @@ export class Game extends component{
             if (ctx) {
                 this.animator = new DinoAnimator(ctx);
                 let animationId: number;
-                let lastTime = 0;
 
                 const animate = (time: number) => {
                     lastTime = time;
